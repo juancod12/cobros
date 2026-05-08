@@ -1,53 +1,100 @@
-/**
- * Below are the colors that are used in the app. The colors are defined in the light and dark mode.
- * There are many other ways to style your app. For example, [Nativewind](https://www.nativewind.dev/), [Tamagui](https://tamagui.dev/), [unistyles](https://reactnativeunistyles.vercel.app), etc.
- */
+export const theme = {
+  colors: {
+    // Brand
+    primary: "#2563EB", // blue-600
+    primaryDark: "#1D4ED8", // blue-700
+    primaryLight: "#DBEAFE", // blue-100
+    primarySoft: "#EFF6FF", // blue-50
 
-import { Platform } from 'react-native';
+    accent: "#6366F1", // indigo-500
+    accentLight: "#EEF2FF", // indigo-50
 
-const tintColorLight = '#0a7ea4';
-const tintColorDark = '#fff';
+    // Semantic
+    success: "#059669", // emerald-600
+    successLight: "#D1FAE5",
+    warning: "#D97706", // amber-600
+    warningLight: "#FEF3C7",
+    danger: "#DC2626", // red-600
+    dangerLight: "#FEE2E2",
 
-export const Colors = {
-  light: {
-    text: '#11181C',
-    background: '#fff',
-    tint: tintColorLight,
-    icon: '#687076',
-    tabIconDefault: '#687076',
-    tabIconSelected: tintColorLight,
-  },
-  dark: {
-    text: '#ECEDEE',
-    background: '#151718',
-    tint: tintColorDark,
-    icon: '#9BA1A6',
-    tabIconDefault: '#9BA1A6',
-    tabIconSelected: tintColorDark,
-  },
-};
+    // Neutrals
+    bg: "#F8FAFC", // slate-50
+    surface: "#FFFFFF",
+    surfaceAlt: "#F1F5F9", // slate-100
+    border: "#E2E8F0", // slate-200
+    borderLight: "#F1F5F9",
 
-export const Fonts = Platform.select({
-  ios: {
-    /** iOS `UIFontDescriptorSystemDesignDefault` */
-    sans: 'system-ui',
-    /** iOS `UIFontDescriptorSystemDesignSerif` */
-    serif: 'ui-serif',
-    /** iOS `UIFontDescriptorSystemDesignRounded` */
-    rounded: 'ui-rounded',
-    /** iOS `UIFontDescriptorSystemDesignMonospaced` */
-    mono: 'ui-monospace',
+    // Text
+    text: "#0F172A", // slate-900
+    textSecondary: "#475569", // slate-600
+    textMuted: "#94A3B8", // slate-400
+    textInverse: "#FFFFFF",
+
+    // Nav
+    navBg: "#0F172A", // slate-900
+    navText: "#CBD5E1", // slate-300
+    navActive: "#2563EB",
+
+    // Status chips
+    statusPaid: { bg: "#D1FAE5", text: "#065F46", border: "#A7F3D0" },
+    statusPending: { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },
+    statusOverdue: { bg: "#FEE2E2", text: "#991B1B", border: "#FECACA" },
+    statusRisk: { bg: "#FEF3C7", text: "#92400E", border: "#FDE68A" },
+    statusWriteoff: { bg: "#F1F5F9", text: "#475569", border: "#CBD5E1" },
   },
-  default: {
-    sans: 'normal',
-    serif: 'serif',
-    rounded: 'normal',
-    mono: 'monospace',
+
+  radius: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+    full: 9999,
   },
-  web: {
-    sans: "system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif",
-    serif: "Georgia, 'Times New Roman', serif",
-    rounded: "'SF Pro Rounded', 'Hiragino Maru Gothic ProN', Meiryo, 'MS PGothic', sans-serif",
-    mono: "SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace",
+
+  space: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 24,
+    xxl: 32,
   },
-});
+
+  font: {
+    xs: 11,
+    sm: 13,
+    md: 15,
+    lg: 17,
+    xl: 20,
+    xxl: 24,
+    xxxl: 30,
+  },
+
+  shadow: {
+    sm: {
+      shadowColor: "#0F172A",
+      shadowOpacity: 0.06,
+      shadowRadius: 6,
+      shadowOffset: { width: 0, height: 2 },
+      elevation: 2,
+    },
+    md: {
+      shadowColor: "#0F172A",
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 4 },
+      elevation: 4,
+    },
+    lg: {
+      shadowColor: "#2563EB",
+      shadowOpacity: 0.15,
+      shadowRadius: 20,
+      shadowOffset: { width: 0, height: 8 },
+      elevation: 8,
+    },
+  },
+} as const;
+
+export type Theme = typeof theme;
