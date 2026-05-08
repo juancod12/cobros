@@ -1,0 +1,18 @@
+export const queryKeys = {
+  homeOverview: () => ['home-overview'] as const,
+  clients: (filters?: Record<string, string | undefined>) => ['clients', filters ?? {}] as const,
+  client: (id: string) => ['client', id] as const,
+  loans: (filters?: Record<string, string | undefined>) => ['loans', filters ?? {}] as const,
+  loan: (id: string) => ['loan', id] as const,
+  loanInstallments: (id: string) => ['loan-installments', id] as const,
+  cashSession: (id: string) => ['cash-session', id] as const,
+  dashboard: (filters?: Record<string, string | undefined>) => ['dashboard', filters ?? {}] as const,
+  notifications: (filters?: Record<string, string | undefined>) => ['notifications', filters ?? {}] as const,
+  adminUsers: (filters?: Record<string, string | undefined>) => ['admin-users', filters ?? {}] as const,
+  adminRoles: () => ['admin-roles'] as const,
+  adminSettings: () => ['admin-settings'] as const,
+  companies: () => ['companies'] as const,
+  branches: (companyId?: string) => ['branches', companyId ?? 'all'] as const,
+  tariffs: () => ['tariffs'] as const,
+  lateFeePolicies: () => ['late-fee-policies'] as const,
+};

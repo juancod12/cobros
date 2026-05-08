@@ -1,0 +1,41 @@
+export const ui = {
+  colors: {
+    bgTop: '#f3f7ff',
+    bgBottom: '#e6f0ff',
+    surface: '#ffffff',
+    surfaceMuted: '#f8fbff',
+    border: '#d8e4f8',
+    text: '#0f1f3a',
+    textMuted: '#4f6488',
+    primary: '#0e5bd8',
+    primarySoft: '#e2edff',
+    danger: '#c62828',
+    dangerSoft: '#fdecec',
+    success: '#0f8a4b',
+    successSoft: '#e8f8ef',
+    warning: '#a26400',
+    warningSoft: '#fff5de',
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 18,
+    pill: 999,
+  },
+  space: {
+    xs: 6,
+    sm: 10,
+    md: 14,
+    lg: 18,
+    xl: 24,
+  },
+  shadow: {
+    card: {
+      shadowColor: '#0b1a33',
+      shadowOpacity: 0.08,
+      shadowRadius: 12,
+      shadowOffset: { width: 0, height: 6 },
+      elevation: 3,
+    },
+  },
+};
