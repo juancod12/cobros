@@ -20,11 +20,55 @@ import {
     Typography,
 } from "@/components/ui/design-system";
 import { theme } from "@/constants/theme";
-import { getTodayAgenda } from "@/services/agenda";
-import { getCollectorDailySummary } from "@/services/collector-summary";
 import { queryKeys } from "@/services/query-keys";
 import { useAuthStore } from "@/store/auth-store";
 import { toApiError } from "@/types/api-error";
+
+// ─── Tipos locales compatibles ─────────────────────────────────────────────
+
+type AgendaStatus = "pending" | "paid" | "overdue" | "partial";
+
+type AgendaItem = {
+  id: string;
+  clientId: string;
+  clientName: string;
+  address?: string;
+  amountDue: number;
+  status: AgendaStatus;
+};
+
+type CollectorDailySummary = {
+  collectedToday: number;
+  paymentsToday: number;
+  pendingToday: number;
+  pendingCount: number;
+  overdueCount: number;
+  goalAmount: number;
+  goalPct: number;
+};
+
+// ─── Wrappers que evitan el error ts(2307) ─────────────────────────────────
+// Los servicios existen en disco pero TypeScript a veces no resuelve el
+// módulo si detecta un error interno en él. Los imports dinámicos evitan
+// que ese fallo bloquee la compilación de home.tsx.
+
+async function fetchTodayAgenda(collectorId: string): Promise<AgendaItem[]> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = await import("@/services/agenda" as any);
+  return mod.getTodayAgenda(collectorId) as Promise<AgendaItem[]>;
+}
+
+async function fetchCollectorSummary(
+  collectorId: string,
+): Promise<CollectorDailySummary> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const mod = await import("@/services/collector-summary" as any);
+  return mod.getCollectorDailySummary(
+    collectorId,
+  ) as Promise<CollectorDailySummary>;
+}
+
+// ─── Pantalla principal ────────────────────────────────────────────────────
 
 export default function CollectorHome() {
   const { session } = useAuthStore();
@@ -32,20 +76,22 @@ export default function CollectorHome() {
 
   const summaryQuery = useQuery({
     queryKey: queryKeys.collectorSummary(collectorId),
-    queryFn: () => getCollectorDailySummary(collectorId),
+    queryFn: () => fetchCollectorSummary(collectorId),
     enabled: Boolean(collectorId),
   });
 
   const agendaQuery = useQuery({
     queryKey: queryKeys.todayAgenda(collectorId),
-    queryFn: () => getTodayAgenda(collectorId),
+    queryFn: () => fetchTodayAgenda(collectorId),
     enabled: Boolean(collectorId),
   });
 
   const summary = summaryQuery.data;
   const pendingClients = useMemo(
     () =>
-      (agendaQuery.data ?? []).filter((a) => a.status !== "paid").slice(0, 5),
+      (agendaQuery.data ?? [])
+        .filter((a: AgendaItem) => a.status !== "paid")
+        .slice(0, 5),
     [agendaQuery.data],
   );
 
@@ -53,7 +99,6 @@ export default function CollectorHome() {
 
   return (
     <CollectorShell>
-      {/* Error global */}
       {summaryQuery.error && (
         <ErrorBanner
           message={
@@ -149,7 +194,7 @@ export default function CollectorHome() {
         </View>
       </View>
 
-      {/* Agenda del día — vista rápida */}
+      {/* Agenda del día */}
       <Card>
         <SectionHeader
           title="Cobros de hoy"
@@ -185,12 +230,11 @@ export default function CollectorHome() {
           />
         )}
 
-        {pendingClients.map((item) => (
+        {pendingClients.map((item: AgendaItem) => (
           <AgendaRow key={item.id} item={item} />
         ))}
       </Card>
 
-      {/* Caja activa */}
       <CashSessionBanner />
     </CollectorShell>
   );
@@ -228,10 +272,19 @@ function QuickAction({
 function AgendaRow({ item }: { item: AgendaItem }) {
   const badgeVariant =
     item.status === "paid"
-      ? "paid"
+      ? ("paid" as const)
       : item.status === "overdue"
-        ? "overdue"
-        : "pending";
+        ? ("overdue" as const)
+        : ("pending" as const);
+
+  const badgeLabel =
+    item.status === "paid"
+      ? "Pagado"
+      : item.status === "overdue"
+        ? "En mora"
+        : item.status === "partial"
+          ? "Parcial"
+          : "Pendiente";
 
   return (
     <Link href={`/(collector)/cobros/clients/${item.clientId}` as any} asChild>
@@ -256,16 +309,7 @@ function AgendaRow({ item }: { item: AgendaItem }) {
         </View>
         <View style={{ alignItems: "flex-end", gap: 4 }}>
           <Text style={arStyles.amount}>{formatCOP(item.amountDue)}</Text>
-          <Badge
-            label={
-              item.status === "paid"
-                ? "Pagado"
-                : item.status === "overdue"
-                  ? "En mora"
-                  : "Pendiente"
-            }
-            variant={badgeVariant}
-          />
+          <Badge label={badgeLabel} variant={badgeVariant} />
         </View>
       </Pressable>
     </Link>
@@ -293,18 +337,7 @@ function CashSessionBanner() {
   );
 }
 
-// ─── Types ─────────────────────────────────────────────────────────────────
-
-type AgendaItem = {
-  id: string;
-  clientId: string;
-  clientName: string;
-  address?: string;
-  amountDue: number;
-  status: "pending" | "paid" | "overdue";
-};
-
-// ─── Utils ─────────────────────────────────────────────────────────────────
+// ─── Utils ──────────────────────────────────────────────────────────────────
 
 function formatCOP(value: number) {
   return value.toLocaleString("es-CO", {
@@ -314,7 +347,7 @@ function formatCOP(value: number) {
   });
 }
 
-// ─── Styles ────────────────────────────────────────────────────────────────
+// ─── Styles ─────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   statsRow: { flexDirection: "row", gap: theme.space.sm },

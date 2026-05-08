@@ -98,3 +98,26 @@ export const theme = {
 } as const;
 
 export type Theme = typeof theme;
+
+/**
+ * Colors — alias de compatibilidad para componentes legacy (ThemedText, ThemedView, Collapsible).
+ * No eliminar: use-theme-color.ts y collapsible.tsx dependen de esto.
+ */
+export const Colors = {
+  light: {
+    text: "#0F172A",
+    background: "#F8FAFC",
+    tint: "#2563EB",
+    icon: "#94A3B8",
+    tabIconDefault: "#94A3B8",
+    tabIconSelected: "#2563EB",
+  },
+  dark: {
+    text: "#F1F5F9",
+    background: "#0F172A",
+    tint: "#60A5FA",
+    icon: "#64748B",
+    tabIconDefault: "#64748B",
+    tabIconSelected: "#60A5FA",
+  },
+} as const;
