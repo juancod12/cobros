@@ -1,7 +1,6 @@
 /**
  * app/(collector)/cobros/payments/new.tsx
- * Registro de pagos — rediseñado con design system SmartPay
- * Flujo: buscar préstamo → seleccionar cuota → ingresar monto → confirmar
+ * Registro de pagos — diseño premium con UX guiada por pasos
  */
 import { Ionicons } from "@expo/vector-icons";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -25,23 +24,40 @@ import { queryKeys } from "@/services/query-keys";
 import { useAuthStore } from "@/store/auth-store";
 import { toApiError } from "@/types/api-error";
 
-// ─── Métodos de pago ────────────────────────────────────────────────────────
-
 const PAYMENT_METHODS = [
-  { label: "Efectivo", value: "CASH", icon: "cash-outline" },
+  {
+    label: "Efectivo",
+    value: "CASH",
+    icon: "cash-outline",
+    color: theme.colors.success,
+  },
   {
     label: "Transferencia",
     value: "TRANSFER",
     icon: "swap-horizontal-outline",
+    color: theme.colors.primary,
   },
-  { label: "Nequi", value: "NEQUI", icon: "phone-portrait-outline" },
-  { label: "Daviplata", value: "DAVIPLATA", icon: "phone-portrait-outline" },
-  { label: "Otro", value: "OTHER", icon: "ellipsis-horizontal-outline" },
+  {
+    label: "Nequi",
+    value: "NEQUI",
+    icon: "phone-portrait-outline",
+    color: "#7C3AED",
+  },
+  {
+    label: "Daviplata",
+    value: "DAVIPLATA",
+    icon: "phone-portrait-outline",
+    color: "#DC2626",
+  },
+  {
+    label: "Otro",
+    value: "OTHER",
+    icon: "ellipsis-horizontal-circle-outline",
+    color: theme.colors.textMuted,
+  },
 ] as const;
 
 type PaymentMethod = (typeof PAYMENT_METHODS)[number]["value"];
-
-// ─── Pantalla principal ─────────────────────────────────────────────────────
 
 export default function NewPaymentScreen() {
   const router = useRouter();
@@ -50,12 +66,9 @@ export default function NewPaymentScreen() {
   const params = useLocalSearchParams<{
     loanId?: string;
     installmentId?: string;
-    clientId?: string;
   }>();
-
   const collectorId = session?.user.id ?? "";
 
-  // Form state
   const [loanSearch, setLoanSearch] = useState("");
   const [loanId, setLoanId] = useState(params.loanId ?? "");
   const [installmentId, setInstallmentId] = useState(
@@ -65,22 +78,18 @@ export default function NewPaymentScreen() {
   const [method, setMethod] = useState<PaymentMethod>("CASH");
   const [notes, setNotes] = useState("");
   const [formError, setFormError] = useState<string | null>(null);
-  const [showLoanSearch, setShowLoanSearch] = useState(!params.loanId);
 
-  // Buscar préstamos
   const loansQuery = useQuery({
     queryKey: queryKeys.loans({ search: loanSearch.trim() || undefined }),
     queryFn: () => getLoans({ search: loanSearch.trim() || undefined }),
     enabled: loanSearch.trim().length >= 2,
   });
 
-  // Préstamo seleccionado
   const selectedLoan = useMemo(
     () => (loansQuery.data ?? []).find((l) => l.id === loanId),
     [loansQuery.data, loanId],
   );
 
-  // Cuotas del préstamo seleccionado
   const installmentsQuery = useQuery({
     queryKey: queryKeys.loanInstallments(loanId),
     queryFn: () => getLoanInstallments(loanId),
@@ -97,7 +106,6 @@ export default function NewPaymentScreen() {
     [installmentsQuery.data, installmentId],
   );
 
-  // Monto sugerido
   const suggestedAmount = useMemo(() => {
     if (selectedInstallment) {
       const paid = selectedInstallment.paidAmount ?? 0;
@@ -106,10 +114,9 @@ export default function NewPaymentScreen() {
     return 0;
   }, [selectedInstallment]);
 
-  // Mutation de pago
   const mutation = useMutation({
     mutationFn: createPayment,
-    onSuccess: async (_, variables) => {
+    onSuccess: async () => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: queryKeys.loans() }),
         queryClient.invalidateQueries({ queryKey: queryKeys.loan(loanId) }),
@@ -124,22 +131,19 @@ export default function NewPaymentScreen() {
           queryKey: queryKeys.todayAgenda(collectorId),
         }),
       ]);
-
       router.replace(
         loanId
           ? (`/(collector)/cobros/loans/${loanId}` as any)
           : "/(collector)/cobros/loans",
       );
     },
-    onError: (err) => {
-      setFormError(toApiError(err, "No se pudo registrar el pago.").message);
-    },
+    onError: (err) =>
+      setFormError(toApiError(err, "No se pudo registrar el pago.").message),
   });
 
   function handleSubmit() {
     setFormError(null);
     const amountNum = parseFloat(amount);
-
     if (!loanId) {
       setFormError("Selecciona un préstamo para continuar.");
       return;
@@ -148,7 +152,6 @@ export default function NewPaymentScreen() {
       setFormError("Ingresa un monto válido mayor a cero.");
       return;
     }
-
     mutation.mutate({
       amount: amountNum,
       method,
@@ -163,25 +166,24 @@ export default function NewPaymentScreen() {
     <CollectorShell>
       <SectionHeader
         title="Registrar pago"
-        subtitle="Recaudo con selección de cuota"
+        subtitle="Recaudo guiado paso a paso"
       />
 
       {formError && <ErrorBanner message={formError} />}
-      {mutation.error && !formError && (
-        <ErrorBanner
-          message={toApiError(mutation.error, "Error al guardar pago.").message}
-        />
-      )}
 
-      {/* PASO 1 — Seleccionar préstamo */}
-      <Card>
-        <Text style={s.stepLabel}>1. Préstamo</Text>
+      {/* PASO 1 — Préstamo */}
+      <View style={s.stepBlock}>
+        <StepBadge number={1} label="Préstamo" active={true} />
 
-        {/* Préstamo ya seleccionado */}
         {loanId && selectedLoan ? (
           <View style={s.selectedLoan}>
-            <View style={s.selectedLoanInfo}>
-              <Text style={s.selectedLoanClient} numberOfLines={1}>
+            <View style={s.selectedLoanAvatar}>
+              <Text style={s.selectedLoanAvatarText}>
+                {selectedLoan.clientName?.[0]?.toUpperCase() ?? "?"}
+              </Text>
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={s.selectedLoanName} numberOfLines={1}>
                 {selectedLoan.clientName ?? "Cliente"}
               </Text>
               <Text style={s.selectedLoanSub}>
@@ -190,62 +192,61 @@ export default function NewPaymentScreen() {
                   {formatCOP(selectedLoan.balance)}
                 </Text>
               </Text>
-              <Text style={s.selectedLoanSub}>
-                Cuotas: {selectedLoan.installmentsPaid}/
-                {selectedLoan.installments} pagadas
-              </Text>
             </View>
             <Pressable
               onPress={() => {
                 setLoanId("");
                 setInstallmentId("");
-                setShowLoanSearch(true);
+                setLoanSearch("");
               }}
-              style={s.changeLoanBtn}
+              style={s.clearBtn}
             >
-              <Ionicons
-                name="close-circle"
-                size={20}
-                color={theme.colors.danger}
-              />
+              <Ionicons name="close" size={16} color={theme.colors.textMuted} />
             </Pressable>
           </View>
         ) : (
-          <>
-            <Input
-              label="Buscar cliente o ID de préstamo"
-              placeholder="Nombre, documento..."
-              value={loanSearch}
-              onChangeText={setLoanSearch}
-            />
+          <Card padded={false} style={{ overflow: "hidden" }}>
+            <View style={s.searchInputWrap}>
+              <Ionicons
+                name="search-outline"
+                size={18}
+                color={theme.colors.textMuted}
+                style={{ marginRight: 10 }}
+              />
+              <TextInput
+                style={s.searchInput}
+                placeholder="Buscar por nombre o documento..."
+                placeholderTextColor={theme.colors.textMuted}
+                value={loanSearch}
+                onChangeText={setLoanSearch}
+              />
+            </View>
 
-            {/* Resultados de búsqueda */}
             {loansQuery.data && loansQuery.data.length > 0 && (
-              <View style={s.loanResults}>
-                {loansQuery.data.slice(0, 6).map((loan) => (
+              <>
+                {loansQuery.data.slice(0, 6).map((loan, i) => (
                   <Pressable
                     key={loan.id}
                     style={({ pressed }) => [
                       s.loanRow,
+                      i > 0 && s.loanRowBorder,
                       pressed && { backgroundColor: theme.colors.surfaceAlt },
                     ]}
                     onPress={() => {
                       setLoanId(loan.id);
-                      setInstallmentId("");
-                      setShowLoanSearch(false);
                       setLoanSearch("");
                     }}
                   >
-                    <View style={s.loanRowAvatar}>
-                      <Text style={s.loanRowAvatarText}>
+                    <View style={s.loanAvatar}>
+                      <Text style={s.loanAvatarText}>
                         {loan.clientName?.[0]?.toUpperCase() ?? "?"}
                       </Text>
                     </View>
                     <View style={{ flex: 1 }}>
-                      <Text style={s.loanRowName} numberOfLines={1}>
+                      <Text style={s.loanName} numberOfLines={1}>
                         {loan.clientName ?? "Cliente"}
                       </Text>
-                      <Text style={s.loanRowSub}>
+                      <Text style={s.loanSub}>
                         Saldo: {formatCOP(loan.balance)} ·{" "}
                         {loan.installmentsPending} cuotas pend.
                       </Text>
@@ -274,7 +275,7 @@ export default function NewPaymentScreen() {
                     )}
                   </Pressable>
                 ))}
-              </View>
+              </>
             )}
 
             {loansQuery.data?.length === 0 && loanSearch.trim().length >= 2 && (
@@ -282,107 +283,99 @@ export default function NewPaymentScreen() {
                 Sin resultados para "{loanSearch}"
               </Text>
             )}
-          </>
+          </Card>
         )}
-      </Card>
+      </View>
 
-      {/* PASO 2 — Seleccionar cuota (solo si hay préstamo) */}
+      {/* PASO 2 — Cuota */}
       {loanId && (
-        <Card>
-          <Text style={s.stepLabel}>2. Cuota (opcional)</Text>
-
-          {installmentsQuery.isLoading ? (
-            <Text style={s.loadingText}>Cargando cuotas...</Text>
-          ) : (
-            <>
-              {/* Auto-asignar */}
-              <Pressable
-                onPress={() => setInstallmentId("")}
+        <View style={s.stepBlock}>
+          <StepBadge
+            number={2}
+            label="Cuota a pagar (opcional)"
+            active={true}
+          />
+          <Card padded={false} style={{ overflow: "hidden" }}>
+            {/* Auto */}
+            <Pressable
+              onPress={() => setInstallmentId("")}
+              style={[
+                s.installChip,
+                installmentId === "" && s.installChipActive,
+              ]}
+            >
+              <Ionicons
+                name="flash"
+                size={14}
+                color={installmentId === "" ? "#fff" : theme.colors.primary}
+              />
+              <Text
                 style={[
-                  s.installmentChip,
-                  installmentId === "" && s.installmentChipActive,
+                  s.installChipText,
+                  installmentId === "" && s.installChipTextActive,
                 ]}
               >
-                <Ionicons
-                  name="flash"
-                  size={14}
-                  color={
-                    installmentId === "" ? "#fff" : theme.colors.textSecondary
-                  }
-                />
-                <Text
+                Auto (primera pendiente)
+              </Text>
+            </Pressable>
+
+            {pendingInstallments.map((inst, i) => {
+              const paid = inst.paidAmount ?? 0;
+              const remaining = Math.max(inst.amount - paid, 0);
+              const isSelected = installmentId === inst.id;
+              const isOverdue = inst.status === "overdue";
+
+              return (
+                <Pressable
+                  key={inst.id}
+                  onPress={() => {
+                    setInstallmentId(inst.id);
+                    if (remaining > 0) setAmount(String(remaining));
+                  }}
                   style={[
-                    s.installmentChipText,
-                    installmentId === "" && s.installmentChipTextActive,
+                    s.installRow,
+                    i > 0 && s.installRowBorder,
+                    isSelected && s.installRowSelected,
+                    isOverdue && s.installRowOverdue,
                   ]}
                 >
-                  Auto (primera pendiente)
-                </Text>
-              </Pressable>
-
-              {/* Lista de cuotas pendientes */}
-              {pendingInstallments.map((inst) => {
-                const paid = inst.paidAmount ?? 0;
-                const remaining = Math.max(inst.amount - paid, 0);
-                const isSelected = installmentId === inst.id;
-                const isOverdue = inst.status === "overdue";
-
-                return (
-                  <Pressable
-                    key={inst.id}
-                    onPress={() => {
-                      setInstallmentId(inst.id);
-                      if (remaining > 0) {
-                        setAmount(String(remaining));
-                      }
-                    }}
-                    style={[
-                      s.installmentRow,
-                      isSelected && s.installmentRowActive,
-                      isOverdue && s.installmentRowOverdue,
-                    ]}
-                  >
-                    <View style={{ flex: 1 }}>
-                      <Text style={s.installmentDate}>
-                        Vence: {inst.dueDate}
+                  <View style={{ flex: 1 }}>
+                    <Text style={s.installDate}>Vence: {inst.dueDate}</Text>
+                    {paid > 0 && (
+                      <Text style={s.installPaid}>
+                        Abonado: {formatCOP(paid)}
                       </Text>
-                      {paid > 0 && (
-                        <Text style={s.installmentPaid}>
-                          Abonado: {formatCOP(paid)}
-                        </Text>
-                      )}
-                    </View>
-                    <View style={{ alignItems: "flex-end", gap: 4 }}>
-                      <Text
-                        style={[
-                          s.installmentAmount,
-                          isSelected && { color: theme.colors.primary },
-                        ]}
-                      >
-                        {formatCOP(remaining)}
-                      </Text>
-                      <Badge
-                        label={isOverdue ? "Vencida" : "Pendiente"}
-                        variant={isOverdue ? "overdue" : "pending"}
-                      />
-                    </View>
-                  </Pressable>
-                );
-              })}
-            </>
-          )}
-        </Card>
+                    )}
+                  </View>
+                  <View style={{ alignItems: "flex-end", gap: 4 }}>
+                    <Text
+                      style={[
+                        s.installAmount,
+                        isSelected && { color: theme.colors.primary },
+                      ]}
+                    >
+                      {formatCOP(remaining)}
+                    </Text>
+                    <Badge
+                      label={isOverdue ? "Vencida" : "Pendiente"}
+                      variant={isOverdue ? "overdue" : "pending"}
+                    />
+                  </View>
+                </Pressable>
+              );
+            })}
+          </Card>
+        </View>
       )}
 
       {/* PASO 3 — Monto */}
       {loanId && (
-        <Card>
-          <Text style={s.stepLabel}>3. Monto a cobrar</Text>
+        <View style={s.stepBlock}>
+          <StepBadge number={3} label="Monto a cobrar" active={true} />
 
-          {/* Sugerido */}
           {suggestedAmount > 0 && (
             <Pressable
-              style={s.suggestedRow}
+              style={s.suggestedBtn}
               onPress={() => setAmount(String(suggestedAmount))}
             >
               <Ionicons
@@ -391,63 +384,83 @@ export default function NewPaymentScreen() {
                 color={theme.colors.primary}
               />
               <Text style={s.suggestedText}>
-                Usar monto sugerido:{" "}
-                <Text style={{ fontWeight: "800" }}>
+                Usar sugerido:{" "}
+                <Text style={{ fontWeight: "700" }}>
                   {formatCOP(suggestedAmount)}
                 </Text>
               </Text>
             </Pressable>
           )}
 
-          {/* Input monto */}
-          <View style={s.amountInputWrap}>
-            <Text style={s.currencySymbol}>$</Text>
-            <TextInput
-              style={s.amountInput}
-              placeholder="0"
-              placeholderTextColor={theme.colors.textMuted}
-              value={amount}
-              onChangeText={setAmount}
-              keyboardType="numeric"
-            />
-          </View>
-
-          {/* Validación visual */}
-          {amount && parseFloat(amount) > 0 && (
-            <View style={s.amountConfirm}>
-              <Ionicons
-                name="checkmark-circle"
-                size={16}
-                color={theme.colors.success}
+          <Card padded={false}>
+            <View style={s.amountWrap}>
+              <Text style={s.currencySign}>$</Text>
+              <TextInput
+                style={s.amountInput}
+                placeholder="0"
+                placeholderTextColor={theme.colors.border}
+                value={amount}
+                onChangeText={setAmount}
+                keyboardType="numeric"
               />
-              <Text style={s.amountConfirmText}>
-                {formatCOP(parseFloat(amount))}
-              </Text>
             </View>
-          )}
-        </Card>
+            {amount && parseFloat(amount) > 0 && (
+              <View style={s.amountConfirm}>
+                <Ionicons
+                  name="checkmark-circle"
+                  size={16}
+                  color={theme.colors.success}
+                />
+                <Text style={s.amountConfirmText}>
+                  {formatCOP(parseFloat(amount))}
+                </Text>
+              </View>
+            )}
+          </Card>
+        </View>
       )}
 
-      {/* PASO 4 — Método de pago */}
+      {/* PASO 4 — Método */}
       {loanId && (
-        <Card>
-          <Text style={s.stepLabel}>4. Método de pago</Text>
-          <View style={s.methodsGrid}>
+        <View style={s.stepBlock}>
+          <StepBadge number={4} label="Método de pago" active={true} />
+          <View style={s.methodGrid}>
             {PAYMENT_METHODS.map((m) => {
               const isActive = method === m.value;
               return (
                 <Pressable
                   key={m.value}
                   onPress={() => setMethod(m.value)}
-                  style={[s.methodChip, isActive && s.methodChipActive]}
+                  style={[
+                    s.methodCard,
+                    isActive && {
+                      borderColor: m.color,
+                      borderWidth: 2,
+                      backgroundColor: m.color + "0D",
+                    },
+                  ]}
                 >
-                  <Ionicons
-                    name={m.icon as any}
-                    size={18}
-                    color={isActive ? "#fff" : theme.colors.textSecondary}
-                  />
+                  <View
+                    style={[
+                      s.methodIcon,
+                      {
+                        backgroundColor: isActive
+                          ? m.color + "20"
+                          : theme.colors.surfaceAlt,
+                      },
+                    ]}
+                  >
+                    <Ionicons
+                      name={m.icon as any}
+                      size={20}
+                      color={isActive ? m.color : theme.colors.textMuted}
+                    />
+                  </View>
                   <Text
-                    style={[s.methodLabel, isActive && s.methodLabelActive]}
+                    style={[
+                      s.methodLabel,
+                      isActive && { color: m.color, fontWeight: "700" },
+                    ]}
                   >
                     {m.label}
                   </Text>
@@ -455,27 +468,31 @@ export default function NewPaymentScreen() {
               );
             })}
           </View>
-        </Card>
+        </View>
       )}
 
-      {/* PASO 5 — Notas (opcional) */}
+      {/* PASO 5 — Notas */}
       {loanId && (
-        <Card>
-          <Text style={s.stepLabel}>5. Observaciones (opcional)</Text>
+        <View style={s.stepBlock}>
+          <StepBadge
+            number={5}
+            label="Observaciones (opcional)"
+            active={false}
+          />
           <Input
-            placeholder="Ej: El cliente abonó en efectivo en su negocio..."
+            placeholder="Ej: El cliente pagó en efectivo en su negocio..."
             value={notes}
             onChangeText={setNotes}
             multiline
             numberOfLines={3}
           />
-        </Card>
+        </View>
       )}
 
-      {/* Botón de confirmación */}
+      {/* CTA */}
       {loanId && (
         <Button
-          label={mutation.isPending ? "Guardando pago..." : "Confirmar pago"}
+          label={mutation.isPending ? "Registrando pago..." : "Confirmar pago"}
           loading={mutation.isPending}
           fullWidth
           size="lg"
@@ -486,13 +503,59 @@ export default function NewPaymentScreen() {
         />
       )}
 
-      {/* Espaciador */}
-      <View style={{ height: 20 }} />
+      <View style={{ height: 24 }} />
     </CollectorShell>
   );
 }
 
-// ─── Utils ───────────────────────────────────────────────────────────────────
+// ─── StepBadge ───────────────────────────────────────────────────────────────
+
+function StepBadge({
+  number,
+  label,
+  active,
+}: {
+  number: number;
+  label: string;
+  active: boolean;
+}) {
+  return (
+    <View style={step.row}>
+      <View style={[step.circle, active && step.circleActive]}>
+        <Text style={[step.num, active && step.numActive]}>{number}</Text>
+      </View>
+      <Text style={step.label}>{label}</Text>
+    </View>
+  );
+}
+
+const step = StyleSheet.create({
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    marginBottom: 10,
+  },
+  circle: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: theme.colors.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+    borderWidth: 1,
+    borderColor: theme.colors.border,
+  },
+  circleActive: {
+    backgroundColor: theme.colors.primary,
+    borderColor: theme.colors.primary,
+  },
+  num: { fontSize: 13, fontWeight: "700", color: theme.colors.textMuted },
+  numActive: { color: "#fff" },
+  label: { fontSize: 14, fontWeight: "600", color: theme.colors.textSecondary },
+});
+
+// ─── Utils + Styles ──────────────────────────────────────────────────────────
 
 function formatCOP(v: number) {
   return v.toLocaleString("es-CO", {
@@ -502,58 +565,67 @@ function formatCOP(v: number) {
   });
 }
 
-// ─── Styles ──────────────────────────────────────────────────────────────────
-
 const s = StyleSheet.create({
-  stepLabel: {
-    fontSize: theme.font.xs,
-    fontWeight: "700",
-    color: theme.colors.textMuted,
-    textTransform: "uppercase",
-    letterSpacing: 0.8,
-    marginBottom: 12,
-  },
+  stepBlock: { gap: 0 },
 
-  // Préstamo seleccionado
   selectedLoan: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 12,
     backgroundColor: theme.colors.primarySoft,
-    borderRadius: theme.radius.md,
-    padding: 12,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: theme.colors.primaryLight,
+    borderRadius: theme.radius.xl,
+    padding: 14,
+    borderWidth: 1.5,
+    borderColor: theme.colors.primary + "33",
   },
-  selectedLoanInfo: { flex: 1, gap: 3 },
-  selectedLoanClient: {
-    fontSize: theme.font.md,
+  selectedLoanAvatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: theme.colors.primaryLight,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  selectedLoanAvatarText: {
+    fontWeight: "700",
+    color: theme.colors.primary,
+    fontSize: 17,
+  },
+  selectedLoanName: {
+    fontSize: 15,
     fontWeight: "700",
     color: theme.colors.primary,
   },
   selectedLoanSub: {
-    fontSize: theme.font.xs,
+    fontSize: 12,
     color: theme.colors.textSecondary,
+    marginTop: 2,
   },
-  changeLoanBtn: { padding: 4 },
+  clearBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: theme.colors.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+  },
 
-  // Resultados búsqueda
-  loanResults: {
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    overflow: "hidden",
-    marginTop: 8,
-  },
-  loanRow: {
+  searchInputWrap: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 10,
-    padding: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderLight,
+  },
+  searchInput: { flex: 1, fontSize: 15, color: theme.colors.text },
+
+  loanRow: { flexDirection: "row", alignItems: "center", gap: 12, padding: 14 },
+  loanRowBorder: {
     borderTopWidth: 1,
     borderTopColor: theme.colors.borderLight,
   },
-  loanRowAvatar: {
+  loanAvatar: {
     width: 36,
     height: 36,
     borderRadius: 18,
@@ -561,167 +633,124 @@ const s = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  loanRowAvatarText: {
-    fontWeight: "800",
-    color: theme.colors.primary,
-    fontSize: theme.font.md,
-  },
-  loanRowName: {
+  loanAvatarText: {
     fontWeight: "700",
-    color: theme.colors.text,
-    fontSize: theme.font.md,
+    color: theme.colors.primary,
+    fontSize: 15,
   },
-  loanRowSub: {
-    fontSize: theme.font.xs,
-    color: theme.colors.textMuted,
-  },
+  loanName: { fontWeight: "600", color: theme.colors.text, fontSize: 14 },
+  loanSub: { fontSize: 12, color: theme.colors.textMuted, marginTop: 2 },
   noResults: {
     textAlign: "center",
     color: theme.colors.textMuted,
-    fontSize: theme.font.sm,
-    paddingVertical: 12,
-  },
-  loadingText: {
-    color: theme.colors.textMuted,
-    fontSize: theme.font.sm,
-    textAlign: "center",
-    paddingVertical: 8,
+    fontSize: 14,
+    padding: 16,
   },
 
-  // Cuotas
-  installmentChip: {
+  installChip: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    paddingHorizontal: 14,
-    paddingVertical: 9,
-    borderRadius: theme.radius.md,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-    marginBottom: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: theme.colors.borderLight,
   },
-  installmentChipActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
+  installChipActive: { backgroundColor: theme.colors.primary },
+  installChipText: {
+    fontWeight: "600",
+    fontSize: 14,
+    color: theme.colors.primary,
   },
-  installmentChipText: {
-    fontWeight: "700",
-    fontSize: theme.font.sm,
-    color: theme.colors.textSecondary,
+  installChipTextActive: { color: "#fff" },
+  installRow: { flexDirection: "row", alignItems: "center", padding: 14 },
+  installRowBorder: {
+    borderTopWidth: 1,
+    borderTopColor: theme.colors.borderLight,
   },
-  installmentChipTextActive: { color: "#fff" },
-
-  installmentRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    padding: 12,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    marginBottom: 6,
-    backgroundColor: theme.colors.surface,
-  },
-  installmentRowActive: {
-    borderColor: theme.colors.primary,
-    backgroundColor: theme.colors.primarySoft,
-  },
-  installmentRowOverdue: {
+  installRowSelected: { backgroundColor: theme.colors.primarySoft },
+  installRowOverdue: {
     borderLeftWidth: 3,
     borderLeftColor: theme.colors.danger,
   },
-  installmentDate: {
-    fontSize: theme.font.sm,
-    fontWeight: "600",
-    color: theme.colors.text,
-  },
-  installmentPaid: {
-    fontSize: theme.font.xs,
+  installDate: { fontSize: 14, fontWeight: "600", color: theme.colors.text },
+  installPaid: {
+    fontSize: 12,
     color: theme.colors.success,
     fontWeight: "600",
+    marginTop: 2,
   },
-  installmentAmount: {
-    fontSize: theme.font.md,
-    fontWeight: "800",
-    color: theme.colors.text,
-  },
+  installAmount: { fontSize: 15, fontWeight: "700", color: theme.colors.text },
 
-  // Monto
-  suggestedRow: {
+  suggestedBtn: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
     backgroundColor: theme.colors.primarySoft,
     borderRadius: theme.radius.md,
-    padding: 10,
-    marginBottom: 12,
+    padding: 12,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: theme.colors.primaryLight,
+    borderColor: theme.colors.primary + "22",
   },
-  suggestedText: {
-    fontSize: theme.font.sm,
-    color: theme.colors.primary,
-  },
-  amountInputWrap: {
+  suggestedText: { fontSize: 13, color: theme.colors.primary },
+
+  amountWrap: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
-    borderColor: theme.colors.border,
-    borderRadius: theme.radius.md,
-    paddingHorizontal: 16,
-    height: 64,
+    paddingHorizontal: 20,
+    paddingVertical: 12,
   },
-  currencySymbol: {
-    fontSize: 28,
-    fontWeight: "300",
+  currencySign: {
+    fontSize: 32,
     color: theme.colors.textMuted,
     marginRight: 8,
+    fontWeight: "300",
   },
   amountInput: {
     flex: 1,
-    fontSize: 32,
+    fontSize: 40,
     fontWeight: "700",
     color: theme.colors.text,
+    letterSpacing: -1,
   },
   amountConfirm: {
     flexDirection: "row",
     alignItems: "center",
     gap: 6,
-    marginTop: 8,
+    paddingHorizontal: 20,
+    paddingBottom: 14,
   },
   amountConfirmText: {
-    fontSize: theme.font.md,
+    fontSize: 14,
     fontWeight: "700",
     color: theme.colors.success,
   },
 
-  // Métodos
-  methodsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  methodChip: {
-    flexDirection: "row",
+  methodGrid: { flexDirection: "row", flexWrap: "wrap", gap: 10 },
+  methodCard: {
+    width: "30%",
+    flexGrow: 1,
     alignItems: "center",
-    gap: 7,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    borderRadius: theme.radius.md,
+    gap: 8,
+    padding: 14,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    backgroundColor: theme.colors.surface,
-  },
-  methodChipActive: {
-    backgroundColor: theme.colors.primary,
-    borderColor: theme.colors.primary,
     ...theme.shadow.sm,
   },
-  methodLabel: {
-    fontWeight: "600",
-    fontSize: theme.font.sm,
-    color: theme.colors.textSecondary,
+  methodIcon: {
+    width: 42,
+    height: 42,
+    borderRadius: 14,
+    alignItems: "center",
+    justifyContent: "center",
   },
-  methodLabelActive: { color: "#fff" },
+  methodLabel: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: theme.colors.textMuted,
+    textAlign: "center",
+  },
 });

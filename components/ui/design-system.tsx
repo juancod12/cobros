@@ -1,7 +1,6 @@
 /**
- * Design System — SmartPay
- * Componentes base reutilizables para toda la app.
- * El admin puede extender estos sin modificar los originales.
+ * Design System Premium — SmartPay
+ * Componentes base con diseño moderno y refinado.
  */
 import { theme } from "@/constants/theme";
 import { Link, type LinkProps } from "expo-router";
@@ -57,17 +56,27 @@ export function Typography({
 const typoStyles = StyleSheet.create({
   h1: {
     fontSize: theme.font.xxxl,
-    fontWeight: "800",
+    fontWeight: "700",
+    color: theme.colors.text,
+    letterSpacing: -0.8,
+  },
+  h2: {
+    fontSize: theme.font.xxl,
+    fontWeight: "700",
     color: theme.colors.text,
     letterSpacing: -0.5,
   },
-  h2: { fontSize: theme.font.xxl, fontWeight: "700", color: theme.colors.text },
-  h3: { fontSize: theme.font.xl, fontWeight: "700", color: theme.colors.text },
+  h3: {
+    fontSize: theme.font.xl,
+    fontWeight: "600",
+    color: theme.colors.text,
+    letterSpacing: -0.3,
+  },
   body: {
     fontSize: theme.font.md,
     fontWeight: "400",
     color: theme.colors.textSecondary,
-    lineHeight: 22,
+    lineHeight: 24,
   },
   bodySmall: {
     fontSize: theme.font.sm,
@@ -130,14 +139,15 @@ export function Button({
         ss.root,
         vs.root,
         fullWidth && { alignSelf: "stretch" },
-        (pressed || disabled || loading) && { opacity: 0.75 },
+        (pressed || loading) && { opacity: 0.82, transform: [{ scale: 0.98 }] },
+        disabled && { opacity: 0.45 },
       ]}
     >
       {loading ? (
         <ActivityIndicator size="small" color={vs.textColor} />
       ) : (
         <>
-          {icon && <View style={{ marginRight: 6 }}>{icon}</View>}
+          {icon && <View style={{ marginRight: 8 }}>{icon}</View>}
           <Text style={[btnBase.text, ss.text, { color: vs.textColor }]}>
             {label}
           </Text>
@@ -154,7 +164,7 @@ const btnBase = StyleSheet.create({
     justifyContent: "center",
     borderRadius: theme.radius.md,
   },
-  text: { fontWeight: "700" },
+  text: { fontWeight: "600", letterSpacing: 0.1 },
 });
 
 const btnVariantStyles: Record<
@@ -169,7 +179,7 @@ const btnVariantStyles: Record<
     root: {
       backgroundColor: theme.colors.primaryLight,
       borderWidth: 1,
-      borderColor: theme.colors.primary,
+      borderColor: theme.colors.primary + "33",
     },
     textColor: theme.colors.primary,
   },
@@ -185,7 +195,7 @@ const btnVariantStyles: Record<
     root: {
       backgroundColor: theme.colors.dangerLight,
       borderWidth: 1,
-      borderColor: theme.colors.danger,
+      borderColor: theme.colors.danger + "44",
     },
     textColor: theme.colors.danger,
   },
@@ -193,7 +203,7 @@ const btnVariantStyles: Record<
     root: {
       backgroundColor: theme.colors.successLight,
       borderWidth: 1,
-      borderColor: theme.colors.success,
+      borderColor: theme.colors.success + "44",
     },
     textColor: theme.colors.success,
   },
@@ -201,16 +211,16 @@ const btnVariantStyles: Record<
 
 const btnSizeStyles: Record<BtnSize, { root: ViewStyle; text: object }> = {
   sm: {
-    root: { paddingHorizontal: 12, paddingVertical: 7 },
-    text: { fontSize: theme.font.sm },
+    root: { paddingHorizontal: 14, paddingVertical: 8 },
+    text: { fontSize: 13 },
   },
   md: {
-    root: { paddingHorizontal: 16, paddingVertical: 11 },
-    text: { fontSize: theme.font.md },
+    root: { paddingHorizontal: 18, paddingVertical: 13 },
+    text: { fontSize: 15 },
   },
   lg: {
-    root: { paddingHorizontal: 22, paddingVertical: 15 },
-    text: { fontSize: theme.font.lg },
+    root: { paddingHorizontal: 24, paddingVertical: 16 },
+    text: { fontSize: 17 },
   },
 };
 
@@ -252,21 +262,23 @@ export function Input({
 }
 
 const inputStyles = StyleSheet.create({
-  wrapper: { gap: 5 },
+  wrapper: { gap: 6 },
   label: {
-    fontSize: theme.font.sm,
+    fontSize: 13,
     fontWeight: "600",
     color: theme.colors.textSecondary,
+    letterSpacing: 0.1,
   },
   row: {
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: theme.colors.surfaceAlt,
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: theme.colors.border,
     borderRadius: theme.radius.md,
-    paddingHorizontal: 12,
-    minHeight: 46,
+    paddingHorizontal: 14,
+    minHeight: 50,
+    ...theme.shadow.sm,
   },
   rowError: {
     borderColor: theme.colors.danger,
@@ -274,17 +286,13 @@ const inputStyles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    fontSize: theme.font.md,
+    fontSize: 15,
     color: theme.colors.text,
-    paddingVertical: 10,
+    paddingVertical: 12,
   },
-  slot: { marginHorizontal: 4 },
-  error: {
-    fontSize: theme.font.xs,
-    color: theme.colors.danger,
-    fontWeight: "600",
-  },
-  hint: { fontSize: theme.font.xs, color: theme.colors.textMuted },
+  slot: { marginHorizontal: 6 },
+  error: { fontSize: 12, color: theme.colors.danger, fontWeight: "600" },
+  hint: { fontSize: 12, color: theme.colors.textMuted },
 });
 
 // ─── Card ──────────────────────────────────────────────────────────────────
@@ -293,13 +301,28 @@ export function Card({
   children,
   style,
   padded = true,
+  accent,
 }: {
   children: ReactNode;
   style?: ViewStyle;
   padded?: boolean;
+  accent?: string;
 }) {
   return (
-    <View style={[cardStyles.root, padded && cardStyles.padded, style]}>
+    <View
+      style={[
+        cardStyles.root,
+        padded && cardStyles.padded,
+        accent
+          ? {
+              borderLeftWidth: 3,
+              borderLeftColor: accent,
+              borderRadius: theme.radius.xl,
+            }
+          : null,
+        style,
+      ]}
+    >
       {children}
     </View>
   );
@@ -311,9 +334,9 @@ const cardStyles = StyleSheet.create({
     borderRadius: theme.radius.xl,
     borderWidth: 1,
     borderColor: theme.colors.border,
-    ...theme.shadow.sm,
+    ...theme.shadow.card,
   },
-  padded: { padding: theme.space.lg },
+  padded: { padding: 20 },
 });
 
 // ─── Badge / Chip ──────────────────────────────────────────────────────────
@@ -371,7 +394,7 @@ const badgeStyles = StyleSheet.create({
     paddingVertical: 3,
   },
   text: {
-    fontSize: theme.font.xs,
+    fontSize: 11,
     fontWeight: "700",
     textTransform: "uppercase",
     letterSpacing: 0.5,
@@ -394,55 +417,67 @@ export function StatCard({
   icon?: ReactNode;
 }) {
   return (
-    <Card style={statStyles.card}>
-      <View style={statStyles.top}>
+    <Card style={statStyles.card} padded={false}>
+      <View style={statStyles.inner}>
         {icon ? (
           <View
             style={[
               statStyles.iconBox,
-              { backgroundColor: accentColor + "18" },
+              { backgroundColor: accentColor + "15" },
             ]}
           >
             {icon}
           </View>
         ) : null}
-        <Text style={statStyles.label} numberOfLines={1}>
-          {label}
-        </Text>
+        <View style={{ flex: 1 }}>
+          <Text style={statStyles.label} numberOfLines={1}>
+            {label}
+          </Text>
+          <Text style={[statStyles.value, { color: accentColor }]}>
+            {value}
+          </Text>
+          {sub ? <Text style={statStyles.sub}>{sub}</Text> : null}
+        </View>
       </View>
-      <Text style={statStyles.value}>{value}</Text>
-      {sub ? <Text style={statStyles.sub}>{sub}</Text> : null}
     </Card>
   );
 }
 
 const statStyles = StyleSheet.create({
-  card: { flex: 1, minWidth: 140, gap: 6 },
-  top: { flexDirection: "row", alignItems: "center", gap: 8, marginBottom: 4 },
+  card: { flex: 1, minWidth: 140 },
+  inner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 12,
+    padding: 16,
+  },
   iconBox: {
-    width: 36,
-    height: 36,
-    borderRadius: theme.radius.md,
+    width: 40,
+    height: 40,
+    borderRadius: 12,
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 2,
   },
   label: {
-    fontSize: theme.font.xs,
-    fontWeight: "700",
+    fontSize: 11,
+    fontWeight: "600",
     color: theme.colors.textMuted,
     textTransform: "uppercase",
-    letterSpacing: 0.6,
-    flex: 1,
+    letterSpacing: 0.8,
+    marginBottom: 4,
   },
   value: {
-    fontSize: theme.font.xxl,
-    fontWeight: "800",
+    fontSize: 22,
+    fontWeight: "700",
+    letterSpacing: -0.5,
     color: theme.colors.text,
   },
   sub: {
-    fontSize: theme.font.xs,
+    fontSize: 12,
     color: theme.colors.textMuted,
     fontWeight: "500",
+    marginTop: 2,
   },
 });
 
@@ -475,15 +510,16 @@ const sectionStyles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 14,
+    marginBottom: 12,
   },
   title: {
-    fontSize: theme.font.lg,
+    fontSize: 17,
     fontWeight: "700",
     color: theme.colors.text,
+    letterSpacing: -0.3,
   },
   subtitle: {
-    fontSize: theme.font.sm,
+    fontSize: 13,
     color: theme.colors.textMuted,
     marginTop: 2,
   },
@@ -494,7 +530,7 @@ const sectionStyles = StyleSheet.create({
 export function Divider({ style }: { style?: ViewStyle }) {
   return (
     <View
-      style={[{ height: 1, backgroundColor: theme.colors.border }, style]}
+      style={[{ height: 1, backgroundColor: theme.colors.borderLight }, style]}
     />
   );
 }
@@ -520,43 +556,30 @@ export function EmptyState({
 }
 
 const emptyStyles = StyleSheet.create({
-  root: { alignItems: "center", paddingVertical: 40, gap: 8 },
-  icon: { marginBottom: 8 },
+  root: { alignItems: "center", paddingVertical: 48, gap: 10 },
+  icon: {
+    marginBottom: 8,
+    width: 72,
+    height: 72,
+    borderRadius: 36,
+    backgroundColor: theme.colors.surfaceAlt,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   title: {
-    fontSize: theme.font.lg,
+    fontSize: 16,
     fontWeight: "700",
     color: theme.colors.textSecondary,
+    letterSpacing: -0.2,
   },
   subtitle: {
-    fontSize: theme.font.sm,
+    fontSize: 13,
     color: theme.colors.textMuted,
     textAlign: "center",
-    maxWidth: 260,
+    maxWidth: 240,
+    lineHeight: 20,
   },
 });
-
-// ─── LinkButton ────────────────────────────────────────────────────────────
-
-export function LinkBtn({
-  href,
-  label,
-}: {
-  href: LinkProps["href"];
-  label: string;
-}) {
-  return (
-    <Link
-      href={href}
-      style={{
-        color: theme.colors.primary,
-        fontWeight: "700",
-        fontSize: theme.font.sm,
-      }}
-    >
-      {label}
-    </Link>
-  );
-}
 
 // ─── Loading ───────────────────────────────────────────────────────────────
 
@@ -573,9 +596,10 @@ export function LoadingScreen() {
       <ActivityIndicator size="large" color={theme.colors.primary} />
       <Text
         style={{
-          marginTop: 12,
+          marginTop: 16,
           color: theme.colors.textMuted,
           fontWeight: "600",
+          fontSize: 14,
         }}
       >
         Cargando...
@@ -598,13 +622,28 @@ const errorStyles = StyleSheet.create({
   root: {
     backgroundColor: theme.colors.dangerLight,
     borderWidth: 1,
-    borderColor: theme.colors.danger,
+    borderColor: theme.colors.danger + "44",
     borderRadius: theme.radius.md,
-    padding: theme.space.md,
+    padding: 14,
   },
-  text: {
-    color: theme.colors.danger,
-    fontWeight: "600",
-    fontSize: theme.font.sm,
-  },
+  text: { color: theme.colors.danger, fontWeight: "600", fontSize: 14 },
 });
+
+// ─── LinkBtn ────────────────────────────────────────────────────────────────
+
+export function LinkBtn({
+  href,
+  label,
+}: {
+  href: LinkProps["href"];
+  label: string;
+}) {
+  return (
+    <Link
+      href={href}
+      style={{ color: theme.colors.primary, fontWeight: "700", fontSize: 14 }}
+    >
+      {label}
+    </Link>
+  );
+}
